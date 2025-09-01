@@ -35,41 +35,50 @@ int main(){
         send_frame2.data[i*2+1] = 0x77;
     }
 
-
-
     while(1){
-
-        canport->reopenCanSocket();
 
         if (canport->sendMessage(send_frame1)) {
             std::cout << "Message sent successfully." << std::endl;
         } else {
-            std::cerr << "Error sending message." << std::endl;
-            bool reopened = canport->reopenCanSocket();
-            if(!reopened) {
-                std::cerr << "Error reopening CAN socket." << std::endl;
+            if(!canport->isCanOk()){
+                std::cerr << "Error sending message." << std::endl;
+                bool reopened = canport->reopenCanSocket();
+                if(!reopened) {
+                    std::cerr << "Error reopening CAN socket." << std::endl;
+                }
+            }
+            else{
+                std::cout << "Send buffer full, message not sent." << std::endl;
             }
         }
 
-        // std::this_thread::sleep_for(std::chrono::nanoseconds(1));
-
-        if (canport->sendMessage(send_frame2) && canport->isCanOk()) {
+        if (canport->sendMessage(send_frame2)) {
             std::cout << "Message sent successfully." << std::endl;
         } else {
-            std::cerr << "Error sending message." << std::endl;
-            bool reopened = canport->reopenCanSocket();
-            if(!reopened) {
-                std::cerr << "Error reopening CAN socket." << std::endl;
+            if(!canport->isCanOk()){
+                std::cerr << "Error sending message." << std::endl;
+                bool reopened = canport->reopenCanSocket();
+                if(!reopened) {
+                    std::cerr << "Error reopening CAN socket." << std::endl;
+                }
+            }
+            else{
+                std::cout << "Send buffer full, message not sent." << std::endl;
             }
         }
 
         can_frame frame;
         bool rec = canport->receiveMessage(frame);
         if(!rec){
-            std::cerr << "Error receiving CAN message. try to reopen" << std::endl;
-            bool reopened = canport->reopenCanSocket();
-            if(!reopened) {
-                std::cerr << "Error reopening CAN socket." << std::endl;
+            if(!canport->isCanOk()){
+                std::cerr << "Error receiving CAN message. try to reopen" << std::endl;
+                bool reopened = canport->reopenCanSocket();
+                if(!reopened) {
+                    std::cerr << "Error reopening CAN socket." << std::endl;
+                }
+            }
+            else{
+                std::cout<< "No message received." << std::endl;
             }
             continue;
         }

@@ -24,9 +24,6 @@ protected:
     // can interface name
     std::string interface_name;
 
-    // 是否使用阻塞的socket
-    bool blocking = true;
-
     // can口是否初始化正常
     bool can_is_ok = false;
 
@@ -57,6 +54,15 @@ protected:
         can_is_ok = state;
     }
 
+    /**
+     * @brief Set the Blocking Mode object
+     * 
+     * @param blocking 
+     * @return true 设置成功
+     * @return false 设置失败
+     */
+    bool setBlockingMode(bool blocking);
+
 
 public:
 
@@ -72,9 +78,8 @@ public:
      * @brief Construct a new Can Driver object
      * 
      * @param ifname 指定的Can网口名称
-     * @param blocking 是否阻塞模式，如果没有设置为阻塞，请注意手动管理缓冲区
      */
-    CanDriver(const std::string ifname, bool blocking = true);
+    CanDriver(const std::string ifname);
 
     /**
      * @brief 发送CAN消息

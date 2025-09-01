@@ -11,7 +11,7 @@
 
 namespace RM_communication{
 
-CanDriver::CanDriver(const std::string ifname, bool blocking):interface_name(ifname), blocking(blocking) {
+CanDriver::CanDriver(const std::string ifname):interface_name(ifname) {
     // 检查 ifname 长度
     if (interface_name.size() >= IFNAMSIZ) {
         throw std::runtime_error("CAN interface name is too long");
@@ -40,25 +40,6 @@ bool CanDriver::openCanSocket() {
         return false;
     }
 
-    // 设置阻塞模式
-
-    int flags = fcntl(socket_fd, F_GETFL, 0);
-    if (flags == -1) {
-        std::cerr << "Error getting flags for fd " << socket_fd << ": " << strerror(errno) << std::endl;
-        return false;
-    }
-
-    if(blocking){
-        flags &= ~O_NONBLOCK;
-    }
-    else{
-        flags |= O_NONBLOCK;
-    }
-
-    if (fcntl(socket_fd, F_SETFL, flags) == -1) {
-        std::cerr << "Error setting flags for fd " << socket_fd << ": " << strerror(errno) << std::endl;
-        return false;
-    }
 
     // 检查can网口标志
     if (ioctl(socket_fd, SIOCGIFFLAGS, &ifr) < 0) {
@@ -139,6 +120,9 @@ bool CanDriver::sendMessage(const can_frame& frame) {
         return false;
     }
 
+    // 在发送的时候设置为阻塞
+    setBlockingMode(true);
+
     int nbytes = write(socket_fd, &frame, sizeof(frame));
     if (nbytes == -1) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
@@ -163,6 +147,9 @@ bool CanDriver::receiveMessage(can_frame& frame) {
         std::cerr << "Error: CAN socket is not open or interface is down. Cannot receive message." << std::endl;
         return false;
     }
+
+    // 在读取的时候设置为不阻塞
+    setBlockingMode(false);
 
     int nbytes = read(socket_fd, &frame, sizeof(frame));
     if (nbytes == -1) {
@@ -211,6 +198,29 @@ bool CanDriver::isCanOk() {
     if (!up_status) {
         std::cerr << "Error: CAN interface " << interface_name << " is down." << std::endl;
         setCanState(false);
+        return false;
+    }
+
+    return true;
+}
+
+bool CanDriver::setBlockingMode(bool blocking) {
+
+    int flags = fcntl(socket_fd, F_GETFL, 0);
+    if (flags == -1) {
+        std::cerr << "Error getting flags for fd " << socket_fd << ": " << strerror(errno) << std::endl;
+        return false;
+    }
+
+    if(blocking){
+        flags &= ~O_NONBLOCK;
+    }
+    else{
+        flags |= O_NONBLOCK;
+    }
+
+    if (fcntl(socket_fd, F_SETFL, flags) == -1) {
+        std::cerr << "Error setting flags for fd " << socket_fd << ": " << strerror(errno) << std::endl;
         return false;
     }
 
