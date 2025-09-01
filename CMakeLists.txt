@@ -24,3 +24,6 @@ add_library(candriver
 add_executable(test_candriver_listen test/test_candriver_listen.cpp)
 target_link_libraries(test_candriver_listen PRIVATE candriver)
 
+
+add_executable(test_candriver_send test/test_candriver_send.cpp)
+target_link_libraries(test_candriver_send PRIVATE candriver)
