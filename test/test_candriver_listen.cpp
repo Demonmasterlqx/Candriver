@@ -17,8 +17,17 @@ int main(){
     std::cout << "CanDriver initialized successfully." << std::endl;
 
     while(1){
+        
         can_frame frame;
-        canport->receiveMessage(frame);
+        bool rec = canport->receiveMessage(frame);
+        if(!rec){
+            std::cerr << "Error receiving CAN message. try to reopen" << std::endl;
+            bool reopened = canport->reopenCanSocket();
+            if(!reopened) {
+                std::cerr << "Error reopening CAN socket." << std::endl;
+            }
+            continue;
+        }
 
         // 输出can帧
         std::cout << "Can id " << frame.can_id;

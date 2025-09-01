@@ -46,14 +46,6 @@ protected:
     bool openCanSocket();
 
     /**
-     * @brief 重新打开CAN socket
-     * 
-     * @return true 
-     * @return false 
-     */
-    bool reopenCanSocket();
-
-    /**
      * @brief Set the Can State object
      * 
      * @param state 
@@ -64,6 +56,15 @@ protected:
 
 
 public:
+
+    /**
+     * @brief 重新打开CAN socket
+     * 
+     * @return true 
+     * @return false 
+     */
+    bool reopenCanSocket();
+
     /**
      * @brief Construct a new Can Driver object
      * 
@@ -90,12 +91,12 @@ public:
     bool receiveMessage(can_frame& frame);
 
     /**
-     * @brief 检查CAN状态
+     * @brief 检查CAN状态，其只会检查到socket和网口状态,并不会检查指定can设备之后的操作
      * 
      * @return true CAN状态正常
      * @return false CAN状态异常
      */
-    bool isCanOk() const ;
+    bool isCanOk();
 
     /**
      * @brief Destroy the Can Driver object
