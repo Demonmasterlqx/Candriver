@@ -1,4 +1,5 @@
 #include "candriver.hpp"
+#include <iostream>
 
 namespace RM_communication{
 
@@ -21,9 +22,35 @@ bool CanDriver::openCanSocket() {
     }
 
     setCanState(false);
+    strncpy(ifr.ifr_name, interface_name.c_str(), IFNAMSIZ);
 
+    // 创建套接字
     socket_fd = socket(PF_CAN, SOCK_RAW, CAN_RAW);
     if (socket_fd < 0) {
+        std::cerr << "Error: Could not create CAN socket. " << strerror(errno) << std::endl;
+        close(socket_fd);
+        return false;
+    }
+
+    // 检查can网口标志
+    if (ioctl(socket_fd, SIOCGIFFLAGS, &ifr) < 0) {
+        std::cerr << "Error: Could not get interface flags for " << interface_name << ". " << strerror(errno) << std::endl;
+        close(socket_fd);
+        return false;
+    }
+
+    bool up_status = (ifr.ifr_flags & IFF_UP) != 0;
+
+    if (!up_status) {
+        std::cerr << "Error: CAN interface " << interface_name << " is down." << std::endl;
+        close(socket_fd);
+        return false;
+    }
+
+    // 指定can设备
+    if(ioctl(socket_fd, SIOCGIFINDEX, &ifr) < 0) {
+        std::cerr << "Error: Could not get interface index for " << interface_name << ". " << strerror(errno) << std::endl;
+        close(socket_fd);
         return false;
     }
 
@@ -32,6 +59,7 @@ bool CanDriver::openCanSocket() {
     addr.can_ifindex = ifr.ifr_ifindex;
 
     if (bind(socket_fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+        std::cerr << "Error: Could not bind CAN socket. " << strerror(errno) << std::endl;
         close(socket_fd);
         socket_fd = -1;
         return false;
@@ -57,6 +85,7 @@ bool CanDriver::reopenCanSocket() {
 
 bool CanDriver::sendMessage(const can_frame& frame) {
     if (socket_fd < 0 || !isCanOk()) {
+        std::cerr << "Error: CAN socket is not open." << std::endl;
         return false;
     }
 
@@ -66,11 +95,20 @@ bool CanDriver::sendMessage(const can_frame& frame) {
 
 bool CanDriver::receiveMessage(can_frame& frame) {
     if (socket_fd < 0 || !isCanOk()) {
+        std::cerr << "Error: CAN socket is not open." << std::endl;
         return false;
     }
 
     int nbytes = read(socket_fd, &frame, sizeof(frame));
     return nbytes == sizeof(frame);
+}
+
+CanDriver::~CanDriver() {
+    closeCanSocket();
+}
+
+bool CanDriver::isCanOk() const {
+    return can_is_ok;
 }
 
 } // namespace RM_communication

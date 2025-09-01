@@ -62,6 +62,7 @@ protected:
         can_is_ok = state;
     }
 
+
 public:
     /**
      * @brief Construct a new Can Driver object
@@ -94,9 +95,13 @@ public:
      * @return true CAN状态正常
      * @return false CAN状态异常
      */
-    bool isCanOk() const {
-        return can_is_ok;
-    }
+    bool isCanOk() const ;
+
+    /**
+     * @brief Destroy the Can Driver object
+     * 
+     */
+    ~CanDriver();
 
 };
 
