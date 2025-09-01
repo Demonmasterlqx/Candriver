@@ -1,9 +1,17 @@
 #include "candriver.hpp"
 #include <iostream>
+#include <cstring>
+#include <sys/ioctl.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/select.h>
+#include <errno.h>
+#include <thread>
+
 
 namespace RM_communication{
 
-CanDriver::CanDriver(const std::string ifname):interface_name(ifname) {
+CanDriver::CanDriver(const std::string ifname, bool blocking):interface_name(ifname), blocking(blocking) {
     // 检查 ifname 长度
     if (interface_name.size() >= IFNAMSIZ) {
         throw std::runtime_error("CAN interface name is too long");
@@ -29,6 +37,26 @@ bool CanDriver::openCanSocket() {
         std::cerr << "Error: Could not create CAN socket. " << strerror(errno) << std::endl;
         setCanState(false);
         closeCanSocket();
+        return false;
+    }
+
+    // 设置阻塞模式
+
+    int flags = fcntl(socket_fd, F_GETFL, 0);
+    if (flags == -1) {
+        std::cerr << "Error getting flags for fd " << socket_fd << ": " << strerror(errno) << std::endl;
+        return false;
+    }
+
+    if(blocking){
+        flags &= ~O_NONBLOCK;
+    }
+    else{
+        flags |= O_NONBLOCK;
+    }
+
+    if (fcntl(socket_fd, F_SETFL, flags) == -1) {
+        std::cerr << "Error setting flags for fd " << socket_fd << ": " << strerror(errno) << std::endl;
         return false;
     }
 
@@ -90,6 +118,7 @@ bool CanDriver::openCanSocket() {
     return true;
 }
 
+
 void CanDriver::closeCanSocket() {
     if (socket_fd >= 0) {
         close(socket_fd);
@@ -106,13 +135,22 @@ bool CanDriver::reopenCanSocket() {
 
 bool CanDriver::sendMessage(const can_frame& frame) {
     if (!isCanOk()) {
-        std::cerr << "Error: CAN socket is not open." << std::endl;
+        std::cerr << "Error: CAN socket is not open or interface is down. Cannot send message." << std::endl;
         return false;
     }
 
     int nbytes = write(socket_fd, &frame, sizeof(frame));
-    if(nbytes != sizeof(frame)) {
-        std::cerr << "Error: Could not send CAN message. " << strerror(errno) << std::endl;
+    if (nbytes == -1) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            std::cerr << "Warning: CAN socket send buffer full." << std::endl;
+            return false;
+        } else {
+            std::cerr << "Error: Could not send CAN message due to an unrecoverable error. " << strerror(errno) << std::endl;
+            setCanState(false);
+            return false;
+        }
+    } else if (nbytes != sizeof(frame)) {
+        std::cerr << "Error: Partial CAN message sent. Sent " << nbytes << " of " << sizeof(frame) << " bytes." << std::endl;
         setCanState(false);
         return false;
     }
@@ -122,13 +160,21 @@ bool CanDriver::sendMessage(const can_frame& frame) {
 
 bool CanDriver::receiveMessage(can_frame& frame) {
     if (!isCanOk()) {
-        std::cerr << "Error: CAN socket is not open." << std::endl;
+        std::cerr << "Error: CAN socket is not open or interface is down. Cannot receive message." << std::endl;
         return false;
     }
 
     int nbytes = read(socket_fd, &frame, sizeof(frame));
-    if(nbytes != sizeof(frame)) {
-        std::cerr << "Error: Could not read CAN message. " << strerror(errno) << std::endl;
+    if (nbytes == -1) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            return false; // 表示当前没有接收到消息
+        } else {
+            std::cerr << "Error: Could not read CAN message due to an unrecoverable error. " << strerror(errno) << std::endl;
+            setCanState(false);
+            return false;
+        }
+    } else if (nbytes != sizeof(frame)) {
+        std::cerr << "Error: Partial CAN message read. Read " << nbytes << " of " << sizeof(frame) << " bytes." << std::endl;
         setCanState(false);
         return false;
     }

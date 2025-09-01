@@ -24,6 +24,9 @@ protected:
     // can interface name
     std::string interface_name;
 
+    // 是否使用阻塞的socket
+    bool blocking = true;
+
     // can口是否初始化正常
     bool can_is_ok = false;
 
@@ -69,8 +72,9 @@ public:
      * @brief Construct a new Can Driver object
      * 
      * @param ifname 指定的Can网口名称
+     * @param blocking 是否阻塞模式，如果没有设置为阻塞，请注意手动管理缓冲区
      */
-    CanDriver(const std::string ifname);
+    CanDriver(const std::string ifname, bool blocking = true);
 
     /**
      * @brief 发送CAN消息

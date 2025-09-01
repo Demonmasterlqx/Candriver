@@ -20,20 +20,28 @@ int main(){
     }
     std::cout << "CanDriver initialized successfully." << std::endl;
 
-    can_frame send_frame = {{0}};
+    can_frame send_frame1 = {{0}};
+    can_frame send_frame2 = {{0}};
 
-    send_frame.can_id = 0x1FF;
-    send_frame.can_dlc = 8;
+    send_frame1.can_id = 0x1FF;
+    send_frame2.can_id = 0x2FF;
+    send_frame1.can_dlc = 8;
+    send_frame2.can_dlc = 8;
 
     for(int i=0;i<4;i++){
-        send_frame.data[i*2] = 0x17;
-        send_frame.data[i*2+1] = 0x77;
+        send_frame1.data[i*2] = 0x17;
+        send_frame1.data[i*2+1] = 0x77;
+        send_frame2.data[i*2] = 0x17;
+        send_frame2.data[i*2+1] = 0x77;
     }
+
+
 
     while(1){
 
-        send_frame.can_id = 0x1FF;
-        if (canport->sendMessage(send_frame)) {
+        canport->reopenCanSocket();
+
+        if (canport->sendMessage(send_frame1)) {
             std::cout << "Message sent successfully." << std::endl;
         } else {
             std::cerr << "Error sending message." << std::endl;
@@ -43,10 +51,9 @@ int main(){
             }
         }
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        // std::this_thread::sleep_for(std::chrono::nanoseconds(1));
 
-        send_frame.can_id = 0x2FF;
-        if (canport->sendMessage(send_frame)) {
+        if (canport->sendMessage(send_frame2) && canport->isCanOk()) {
             std::cout << "Message sent successfully." << std::endl;
         } else {
             std::cerr << "Error sending message." << std::endl;
