@@ -3,11 +3,14 @@
 #include <memory>
 #include <iostream>
 #include <thread>
+#include <unordered_map>
+#include <chrono>
 
 using RM_communication::CanDriver;
 
 int main(){
     std::shared_ptr<CanDriver> canport = nullptr;
+    std::unordered_map<uint32_t, std::chrono::steady_clock::time_point> last_recv_time;
 
     try{
         canport = std::make_shared<CanDriver>("can0");
@@ -21,13 +24,28 @@ int main(){
 
     send_frame.can_id = 0x1FF;
     send_frame.can_dlc = 8;
-    send_frame.data[0] = 0x17;
-    send_frame.data[1] = 0x77;
+
+    for(int i=0;i<4;i++){
+        send_frame.data[i*2] = 0x17;
+        send_frame.data[i*2+1] = 0x77;
+    }
 
     while(1){
-        
-        // std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
+        send_frame.can_id = 0x1FF;
+        if (canport->sendMessage(send_frame)) {
+            std::cout << "Message sent successfully." << std::endl;
+        } else {
+            std::cerr << "Error sending message." << std::endl;
+            bool reopened = canport->reopenCanSocket();
+            if(!reopened) {
+                std::cerr << "Error reopening CAN socket." << std::endl;
+            }
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+        send_frame.can_id = 0x2FF;
         if (canport->sendMessage(send_frame)) {
             std::cout << "Message sent successfully." << std::endl;
         } else {
@@ -48,6 +66,15 @@ int main(){
             }
             continue;
         }
+
+        // 检测每个id的接收can帧的时间间隔（微秒）
+        auto now = std::chrono::steady_clock::now();
+        uint32_t id = frame.can_id;
+        if (last_recv_time.count(id)) {
+            auto interval = std::chrono::duration_cast<std::chrono::microseconds>(now - last_recv_time[id]).count();
+            std::cout << "Interval since last frame for id " << std::hex << id << ": " << interval << " us" << std::endl;
+        }
+        last_recv_time[id] = now;
 
         // 输出can帧
         std::cout << "Can id " << frame.can_id;
