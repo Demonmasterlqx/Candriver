@@ -43,10 +43,21 @@ bool CanDriver::openCanSocket() {
     bool up_status = (ifr.ifr_flags & IFF_UP) != 0;
 
     if (!up_status) {
+        // 尝试设置up can网口
+
         std::cerr << "Error: CAN interface " << interface_name << " is down." << std::endl;
-        setCanState(false);
-        closeCanSocket();
-        return false;
+
+        ifr.ifr_flags |= IFF_UP;
+        if (ioctl(socket_fd, SIOCSIFFLAGS, &ifr) < 0) {
+            std::cerr << "Error: Could not set interface " << interface_name << " up. " << strerror(errno) << std::endl;
+            setCanState(false);
+            closeCanSocket();
+            return false;
+        }
+        else{
+            std::cout << "Interface " << interface_name << " set to UP." << std::endl;
+        }
+
     }
 
     // 指定can设备
