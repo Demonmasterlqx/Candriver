@@ -35,6 +35,9 @@ target_link_libraries(test_candriver_send PRIVATE candriver)
 add_executable(test_candriver_dm test/test_candriver_dm-J4310.cpp)
 target_link_libraries(test_candriver_dm PRIVATE candriver)
 
+add_executable(test_candriver_sendM3508 test/test_candriver_sendM3508.cpp)
+target_link_libraries(test_candriver_sendM3508 PRIVATE candriver)
+
 install(TARGETS candriver
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib
