@@ -1,5 +1,5 @@
+cmake_minimum_required(VERSION 4.0)
 project(Candriver CXX)
-cmake_minimum_required(VERSION 3.0)
 
 if(NOT CMAKE_BUILD_TYPE)
 set(CMAKE_BUILD_TYPE Release)
@@ -32,8 +32,11 @@ target_link_libraries(test_candriver_listen PRIVATE candriver)
 add_executable(test_candriver_send test/test_candriver_send.cpp)
 target_link_libraries(test_candriver_send PRIVATE candriver)
 
-add_executable(test_candriver_dm test/test_candriver_dm-J4310.cpp)
-target_link_libraries(test_candriver_dm PRIVATE candriver)
+add_executable(test_candriver_dmJ4310 test/test_candriver_dm-J4310.cpp)
+target_link_libraries(test_candriver_dmJ4310 PRIVATE candriver)
+
+add_executable(test_candriver_dmJ8090 test/test_candriver_dm-J8090.cpp)
+target_link_libraries(test_candriver_dmJ8090 PRIVATE candriver)
 
 add_executable(test_candriver_sendM3508 test/test_candriver_sendM3508.cpp)
 target_link_libraries(test_candriver_sendM3508 PRIVATE candriver)
@@ -56,7 +59,7 @@ install(TARGETS
   DESTINATION lib/${PROJECT_NAME})
 
 install(TARGETS
-    test_candriver_listen test_candriver_send test_candriver_dm
+    test_candriver_listen test_candriver_send test_candriver_dmJ4310 test_candriver_dmJ8090
     DESTINATION test/${PROJECT_NAME}
 )
 

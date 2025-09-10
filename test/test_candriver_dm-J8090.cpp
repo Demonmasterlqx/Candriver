@@ -29,7 +29,7 @@ int main(){
     memcpy(send_frame.data, &v, sizeof(v));
 
     can_frame enable_frame = {};
-    enable_frame.can_id = 3 + 0x200;
+    enable_frame.can_id = canid + 0x200;
     enable_frame.can_dlc = 8;
     const uint8_t Enable_Frame[8] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFC}; 
     memcpy(enable_frame.data, Enable_Frame, sizeof(Enable_Frame));
@@ -38,7 +38,7 @@ int main(){
         return 1;
     }
 
-    for(int i=0;i<10000;i++){
+    for(int i=0;i<100;i++){
 
         canport->reopenCanSocket();
 
@@ -87,7 +87,7 @@ int main(){
     }
 
     can_frame disable_frame = {};
-    disable_frame.can_id = send_frame.can_id + 0x200;
+    disable_frame.can_id = canid + 0x200;
     disable_frame.can_dlc = 8;
     const uint8_t Disable_Frame[8] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFD};
     memcpy(disable_frame.data, Disable_Frame, sizeof(Disable_Frame));
